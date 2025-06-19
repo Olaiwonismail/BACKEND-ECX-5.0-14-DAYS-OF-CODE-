@@ -12,6 +12,20 @@ class Table(Base):
     def __repr__(self):
         return f"<Item(id={self.id}, name='{self.name}')>"
 
+class User(Base):
+    """SQLAlchemy model for a User."""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    role = Column(String, default="user")  
+    hashed_password = Column(String)
+    
+
+    def __repr__(self):
+        return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
+
 # You can add a function to create tables if they don't exist
 def create_db_tables():
     """Creates all defined database tables."""
