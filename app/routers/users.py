@@ -26,7 +26,7 @@ async def signup(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    return HTTPException(status_code=201, detail="User created successfully")
+    raise HTTPException(status_code=201, detail="User created successfully")
 
 
 @router.post("/login")

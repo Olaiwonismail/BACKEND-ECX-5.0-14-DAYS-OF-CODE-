@@ -1,4 +1,4 @@
-from http.client import HTTPException
+from fastapi import HTTPException
 from fastapi import APIRouter, Depends
 
 from app.auth import get_current_user
@@ -16,5 +16,5 @@ def user(user = Depends(get_current_user)):
 def admin(user = Depends(get_current_user)):
     """Admin endpoint."""
     if user.role != "admin":
-        return HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=403, detail="Access denied")
     return f"Hello, Admin {user.username} !"
