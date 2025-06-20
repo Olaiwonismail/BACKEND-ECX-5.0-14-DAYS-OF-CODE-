@@ -54,3 +54,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+
+def require_role(required_role: str):
+    def role_checker(user = Depends(get_current_user)):
+        if user.role != required_role:
+            raise HTTPException(status_code=403, detail="Access denied")
+        return user
+    return role_checker

@@ -1,16 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Float, ForeignKey, Integer, String, Boolean
 from app.database import Base, engine
+from sqlalchemy.orm import relationship
 
-class Table(Base):
-    """SQLAlchemy model for an Item."""
-    __tablename__ = "items"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    
-
-    def __repr__(self):
-        return f"<Item(id={self.id}, name='{self.name}')>"
 
 class User(Base):
     """SQLAlchemy model for a User."""
@@ -21,10 +12,24 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     role = Column(String, default="user")  
     hashed_password = Column(String)
-    
+    jobs = relationship("Job", back_populates="owner")
+
 
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
+
+class Job(Base):
+    __tablename__ = "jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    location = Column(String)
+    salary = Column(Float)
+    company = Column(String)
+    posted_by = Column(Integer, ForeignKey("users.id"))
+
+    owner = relationship("User", back_populates="jobs")
 
 # You can add a function to create tables if they don't exist
 def create_db_tables():

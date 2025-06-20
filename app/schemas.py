@@ -5,8 +5,7 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
-    role: str = "user"
-
+   
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -20,3 +19,17 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class JobCreate(BaseModel):
+    title: str
+    description: str
+    location: str
+    salary: float
+    company: str
+
+class JobResponse(JobCreate):
+    id: int
+    posted_by: int
+
+    class Config:
+        orm_mode = True    
