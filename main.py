@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.models import create_db_tables
 from app.config import settings  
-
+from fastapi_pagination import add_pagination
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -31,3 +31,6 @@ app.include_router(index, prefix="", tags=["index"])
 app.include_router(auth,prefix="/auth",tags=["auth"])
 app.include_router(jobs,prefix="/employer/jobs",tags=["manage jobs"])
 app.include_router(applicant_jobs,prefix="/jobs",tags = ["jobs"])
+
+
+add_pagination(app)

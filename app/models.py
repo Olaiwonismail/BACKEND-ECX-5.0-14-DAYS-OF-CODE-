@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Float, ForeignKey, Integer, String, Boolean
+from sqlalchemy import Column, Float, ForeignKey, Integer, String, Boolean, DateTime
 from app.database import Base, engine
 from sqlalchemy.orm import relationship
-
+from sqlalchemy.sql import func
 
 class User(Base):
     """SQLAlchemy model for a User."""
@@ -29,6 +29,7 @@ class Job(Base):
     company = Column(String)
     job_type = Column(String)
     posted_by = Column(Integer, ForeignKey("users.id"))
+    date_posted = Column(DateTime, default=func.now())     
 
     owner = relationship("User", back_populates="jobs")
 

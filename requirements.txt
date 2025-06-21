@@ -14,3 +14,4 @@ SQLAlchemy
 starlette
 typing_extensions
 uvicorn
+fastapi-pagination
