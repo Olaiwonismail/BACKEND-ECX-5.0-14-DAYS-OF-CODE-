@@ -23,7 +23,7 @@ def list_jobs(db = Depends(get_db), employer = Depends(require_role("employer"))
 @router.post("/create_jobs",status_code=status.HTTP_201_CREATED, response_model=JobResponse)
 def create_jobs(job: JobCreate,
                 
-                # employer = Depends(require_role("employer")),
+                employer = Depends(require_role("employer")),
                 db=Depends(get_db),
                 
                 ):
