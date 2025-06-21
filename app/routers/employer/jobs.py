@@ -10,20 +10,27 @@ from app.schemas import JobCreate, JobResponse
 router = APIRouter()
 
 @router.get("/", response_model=list[JobResponse])
-def list_jobs(db = Depends(get_db)):
-    return db.query(Job).all()
+def list_jobs(db = Depends(get_db), employer = Depends(require_role("employer"))):
+    """
+    List all job postings for the employer.
+    """
+    jobs = db.query(Job).filter(Job.posted_by == employer.id).all()
+    if not jobs:
+        raise HTTPException(status_code=404, detail="No jobs found for this employer")
+    return jobs
+    
 
 @router.post("/create_jobs",status_code=status.HTTP_201_CREATED, response_model=JobResponse)
 def create_jobs(job: JobCreate,
                 
-                employer = Depends(require_role("employer")),
+                # employer = Depends(require_role("employer")),
                 db=Depends(get_db),
                 
                 ):
     """
     Create a new job posting.
     """
-    new_job = Job(**job.dict(), posted_by=employer.id)
+    new_job = Job(**job.dict(), posted_by=1)
     db.add(new_job)
     db.commit()
     db.refresh(new_job)

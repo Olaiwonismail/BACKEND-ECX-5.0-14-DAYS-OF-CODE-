@@ -61,3 +61,12 @@ def require_role(required_role: str):
             raise HTTPException(status_code=403, detail="Access denied")
         return user
     return role_checker
+
+def create_new_access_token_for_refresh(refresh_token: str):
+    payload = decode_token(refresh_token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    email = payload.get("sub")
+    
+    new_access_token = create_token({"sub": email}, timedelta(minutes=ACCESS_EXPIRE_MINUTES))
+    return new_access_token    

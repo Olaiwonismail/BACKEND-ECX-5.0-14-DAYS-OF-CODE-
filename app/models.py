@@ -27,6 +27,7 @@ class Job(Base):
     location = Column(String)
     salary = Column(Float)
     company = Column(String)
+    job_type = Column(String)
     posted_by = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="jobs")

@@ -23,13 +23,11 @@ app.add_middleware(
 create_db_tables()
 # Include the router from app.routers.index
 from app.routers.index import router as index
-from app.routers.applicant.auth import router as applicant
-from app.routers.employer.auth import router as employer
+from app.routers.auth import router as auth
 from app.routers.employer.jobs import router as jobs
 from app.routers.applicant.jobs import router as applicant_jobs
 
 app.include_router(index, prefix="", tags=["index"])
-app.include_router(employer,prefix="/employer",tags=["employer"])
-app.include_router(applicant,prefix="/applicant",tags=["applicant"])
+app.include_router(auth,prefix="/auth",tags=["auth"])
 app.include_router(jobs,prefix="/employer/jobs",tags=["manage jobs"])
 app.include_router(applicant_jobs,prefix="/jobs",tags = ["jobs"])

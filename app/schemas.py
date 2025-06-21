@@ -1,11 +1,14 @@
+from typing import Optional
 from pydantic import BaseModel, EmailStr
+from pyparsing import Enum
 
 
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
-   
+    role: str
+
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -26,6 +29,8 @@ class JobCreate(BaseModel):
     location: str
     salary: float
     company: str
+    job_type: str
+    
 
 class JobResponse(JobCreate):
     id: int
@@ -33,3 +38,21 @@ class JobResponse(JobCreate):
 
     class Config:
         orm_mode = True    
+
+class JobType(str, Enum):
+    full_time = "full-time"
+    part_time = "part-time"
+    contract = "contract"
+
+class JobSearch(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    location: Optional[str] = None
+    min_salary: Optional[float] = None
+    max_salary: Optional[float] = None
+    company:Optional[str] = None
+    job_type: Optional[JobType] = None
+
+
+    class Config:
+        orm_mode = True 
