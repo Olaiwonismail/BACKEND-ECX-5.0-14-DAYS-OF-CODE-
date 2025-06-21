@@ -12,7 +12,7 @@ A modular FastAPI project template with authentication, user roles, job posting,
 - Environment-based configuration
 - CORS enabled for frontend integration
 
-## Project Structure
+## Project Structure 
 
 ```
 my-fastapi-blueprint/
