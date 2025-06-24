@@ -13,10 +13,12 @@ class User(Base):
     role = Column(String, default="user")  
     hashed_password = Column(String)
     jobs = relationship("Job", back_populates="owner")
-
+    jobApplications = relationship("Application", back_populates="applicant")
 
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
+
+
 
 class Job(Base):
     __tablename__ = "jobs"
@@ -32,6 +34,19 @@ class Job(Base):
     date_posted = Column(DateTime, default=func.now())     
 
     owner = relationship("User", back_populates="jobs")
+    applicantions = relationship("Application", back_populates="job", cascade="all, delete-orphan")
+    
+class Application(Base):
+    __tablename__ = 'applications'
+    id =  Column(Integer, primary_key=True)
+    applicantId = Column(Integer,ForeignKey("users.id"))
+    jobId = Column(Integer,ForeignKey("jobs.id"))
+    resumePath = Column(String)
+    coverLetterPath = Column(String)
+    submittedAt = Column(DateTime, default=func.now())  
+
+    applicant = relationship("User", back_populates="jobApplications")
+    job = relationship("Job", back_populates="applicantions")
 
 # You can add a function to create tables if they don't exist
 def create_db_tables():

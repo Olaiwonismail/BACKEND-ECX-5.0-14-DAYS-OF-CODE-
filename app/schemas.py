@@ -65,3 +65,12 @@ class JobSearch(BaseModel):
 
     class Config:
         orm_mode = True 
+
+
+
+
+class ApplicationModel(BaseModel):
+   
+    jobId : int
+   
+    

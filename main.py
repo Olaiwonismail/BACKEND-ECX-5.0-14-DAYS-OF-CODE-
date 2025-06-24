@@ -26,11 +26,12 @@ from app.routers.index import router as index
 from app.routers.auth import router as auth
 from app.routers.employer.jobs import router as jobs
 from app.routers.applicant.jobs import router as applicant_jobs
+from app.routers.applicant.apply import router as applicant_apply
 
 app.include_router(index, prefix="", tags=["index"])
 app.include_router(auth,prefix="/auth",tags=["auth"])
 app.include_router(jobs,prefix="/employer/jobs",tags=["manage jobs"])
 app.include_router(applicant_jobs,prefix="/jobs",tags = ["jobs"])
-
+app.include_router(applicant_apply,prefix="/applicant",tags=["apply"])
 
 add_pagination(app)

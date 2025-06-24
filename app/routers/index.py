@@ -7,7 +7,7 @@ from app.auth import get_current_user, require_role
 router = APIRouter()
 
 @router.get("/user")
-def user(user = Depends(get_current_user)):
+def user( user = Depends(require_role("applicant"))):
     
     """Endpoint for regular users."""
     return f"Hello, User {user.username} !"

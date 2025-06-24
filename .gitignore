@@ -13,6 +13,6 @@ venv/
 # Editor files (optional)
 .vscode/
 .idea/
-
+uploads/
 # Pytest cache
 .pytest_cache/

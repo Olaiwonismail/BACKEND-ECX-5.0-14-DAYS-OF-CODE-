@@ -1,6 +1,8 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from fastapi_pagination import Page, Params,paginate
+from sqlalchemy.orm import Session # type: ignore
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.sqlalchemy import paginate
 
 from app.database import get_db
 from app.models import Job
@@ -8,9 +10,10 @@ from app.schemas import JobResponse, JobSearch, JobSortBy, SortOrder
 
 router= APIRouter()
 
-@router.get("/all")
+@router.get("/all",response_model=Page[JobResponse])
 def list_jobs(db: Session = Depends(get_db),params: Params = Depends()):
-    jobs = db.query(Job).all()
+    jobs = db.query(Job)
+    
     return paginate(jobs, params)
 
 

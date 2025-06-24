@@ -35,8 +35,8 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    if db_user.role=='applicant':
-        raise HTTPException(status_code=403, detail="Access denied")
+    # if db_user.role=='applicant':
+    #     raise HTTPException(status_code=403, detail="Access denied")
 
     return create_tokens(db_user.email)
 

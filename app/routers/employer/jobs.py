@@ -30,7 +30,7 @@ def create_jobs(job: JobCreate,
     """
     Create a new job posting.
     """
-    new_job = Job(**job.dict(), posted_by=1)
+    new_job = Job(**job.dict(), posted_by=employer.id)
     db.add(new_job)
     db.commit()
     db.refresh(new_job)
