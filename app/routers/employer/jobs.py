@@ -79,3 +79,21 @@ def delete_job(
     db.delete(job)
     db.commit()
     return "job posting deleted"
+
+
+
+# @router.get()
+@router.get("/jobs/{jobId}/application")
+def list_jobs(jobId: int, db = Depends(get_db), employer = Depends(require_role("employer"))):
+    """
+    list all applications for a specific job posting by the employer.
+    """
+    # if jobId 
+    # job = db.query(Job).filter(Job.id == jobId).first()
+    job = db.query(Job).filter(Job.id == jobId).first()
+    if job.posted_by != employer.id:
+    
+        raise HTTPException(status_code=404, detail="You do not have permission to view this")
+    if not job:
+        raise HTTPException(status_code=404, detail="No jobs found for this employer")
+    return job.applications

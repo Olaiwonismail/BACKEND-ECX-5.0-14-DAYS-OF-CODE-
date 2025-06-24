@@ -96,4 +96,3 @@ async def apply(application : int,db = Depends(get_db),user= Depends(require_rol
         return {"error": str(e), "message": "Failed to submit application"}
     return {"message": "Application submitted successfully"}
 
-

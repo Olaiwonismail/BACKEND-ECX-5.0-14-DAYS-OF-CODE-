@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 from pyparsing import Enum
@@ -73,4 +74,16 @@ class ApplicationModel(BaseModel):
    
     jobId : int
    
-    
+
+class JobApplication(BaseModel):
+    id: int
+    applicantId: int
+    jobId: int
+    resumePath: str
+    coverLetterPath: str
+    submittedAt: datetime # ISO 8601 date string
+    # application_status: str
+    # job: ApplicationModel
+
+    class Config:
+        orm_mode = True   

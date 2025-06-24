@@ -1,12 +1,13 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
+from app.auth import require_role
 from sqlalchemy.orm import Session # type: ignore
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate
 
 from app.database import get_db
 from app.models import Job
-from app.schemas import JobResponse, JobSearch, JobSortBy, SortOrder
+from app.schemas import JobApplication, JobResponse, JobSearch, JobSortBy, SortOrder
 
 router= APIRouter()
 
@@ -58,5 +59,28 @@ def filter_jobs(filter: JobSearch, db: Session = Depends(get_db)
     #     raise HTTPException(status_code=404, detail="No jobs found for this type")
     # return jobs
 
+@router.get("/job/{job_id}", response_model=JobResponse)
+def get_job(job_id: int, db: Session = Depends(get_db)):
+    """
+    Get a specific job by its ID.
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
+
+@router.get("/my-applications")
+def jobs_applied(db: Session = Depends(get_db), user=Depends(require_role("applicant"))):
+    """
+    Get all jobs applied by the user
+    """
+    
+    applications= user.jobApplications
+    if not applications:    
+        raise HTTPException(status_code=404, detail="No jobs applied by this user")
+    job=applications[0].job
+    return [application
+            
+             for application in applications]
 
