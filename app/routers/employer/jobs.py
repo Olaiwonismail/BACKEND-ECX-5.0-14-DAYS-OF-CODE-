@@ -1,99 +1,129 @@
-from fastapi import APIRouter, HTTPException, status
-from fastapi.params import Depends
-
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 from app.auth import get_current_user, require_role
 from app.database import get_db
-from app.models import Job
-from app.schemas import JobCreate, JobResponse
-
+from app.models import Job, Application
+from app.schemas import ApplicationResponse, JobCreate, JobResponse
 
 router = APIRouter()
 
 @router.get("/", response_model=list[JobResponse])
-def list_jobs(db = Depends(get_db), employer = Depends(require_role("employer"))):
-    """
-    List all job postings for the employer.
-    """
+def list_employer_jobs(
+    db: Session = Depends(get_db),
+    employer = Depends(require_role("employer"))
+):
     jobs = db.query(Job).filter(Job.posted_by == employer.id).all()
-    if not jobs:
-        raise HTTPException(status_code=404, detail="No jobs found for this employer")
     return jobs
-    
 
-@router.post("/create_jobs",status_code=status.HTTP_201_CREATED, response_model=JobResponse)
-def create_jobs(job: JobCreate,
-                
-                employer = Depends(require_role("employer")),
-                db=Depends(get_db),
-                
-                ):
-    """
-    Create a new job posting.
-    """
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=JobResponse)
+def create_job(
+    job: JobCreate,
+    employer = Depends(require_role("employer")),
+    db: Session = Depends(get_db)
+):
     new_job = Job(**job.dict(), posted_by=employer.id)
-    db.add(new_job)
-    db.commit()
-    db.refresh(new_job)
+    
+    try:
+        db.add(new_job)
+        db.commit()
+        db.refresh(new_job)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create job"
+        )
+    
     return new_job
-
 
 @router.put("/{job_id}", response_model=JobResponse)
 def update_job(
     job_id: int,
     job_update: JobCreate,
-    db = Depends(get_db),
+    db: Session = Depends(get_db),
     employer = Depends(require_role("employer"))
 ):
-    """
-    Update Job Postings
-    """
     job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:  
-        raise HTTPException(404, "Job not found")
-    if job.posted_by != employer.id:
-        raise HTTPException(403, "Not authorized to update this job")
     
+    # Validate job existence
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+    
+    # Validate ownership
+    if job.posted_by != employer.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this job"
+        )
+    
+    # Update job fields
     for key, value in job_update.dict().items():
         setattr(job, key, value)
-
-    db.commit()
-    db.refresh(job)
+    
+    try:
+        db.commit()
+        db.refresh(job)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update job"
+        )
+    
     return job
 
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_job(
     job_id: int,
-    db = Depends(get_db),
+    db: Session = Depends(get_db),
     employer = Depends(require_role("employer"))
 ):
-    
-    """
-    delete a job posting
-    """
     job = db.query(Job).filter(Job.id == job_id).first()
-    if not job:
-        raise HTTPException(404, "Job not found")
-    if job.posted_by != employer.id:
-        raise HTTPException(403, "Not authorized to delete this job")
     
-    db.delete(job)
-    db.commit()
-    return "job posting deleted"
-
-
-
-# @router.get()
-@router.get("/jobs/{jobId}/application")
-def list_jobs(jobId: int, db = Depends(get_db), employer = Depends(require_role("employer"))):
-    """
-    list all applications for a specific job posting by the employer.
-    """
-    # if jobId 
-    # job = db.query(Job).filter(Job.id == jobId).first()
-    job = db.query(Job).filter(Job.id == jobId).first()
-    if job.posted_by != employer.id:
-    
-        raise HTTPException(status_code=404, detail="You do not have permission to view this")
+    # Validate job existence
     if not job:
-        raise HTTPException(status_code=404, detail="No jobs found for this employer")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+    
+    # Validate ownership
+    if job.posted_by != employer.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this job"
+        )
+    
+    try:
+        db.delete(job)
+        db.commit()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete job"
+        )
+
+@router.get("/{job_id}/applications", response_model=list[ApplicationResponse])
+def get_job_applications(
+    job_id: int,
+    db: Session = Depends(get_db),
+    employer = Depends(require_role("employer"))
+):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    
+    # Validate job existence
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+    
+    # Validate ownership
+    if job.posted_by != employer.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view these applications"
+        )
+    
     return job.applications

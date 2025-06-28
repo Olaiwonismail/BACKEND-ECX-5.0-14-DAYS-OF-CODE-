@@ -1,98 +1,111 @@
 import uuid
-from fastapi import APIRouter,Depends, File, HTTPException, UploadFile
+import os
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from app.auth import require_role
 from app.database import get_db
-from app.models import Application
-from app.schemas import  ApplicationModel
-import os,dotenv 
-dotenv.load_dotenv()
-
+from app.models import Application, Job
+from sqlalchemy.orm import Session
+from app.schemas import ApplicationCreate
 
 router = APIRouter()
 
+# Configurations
+UPLOAD_DIR_RESUME = os.getenv("UPLOAD_DIR_RESUME", "uploads/resumes")
+UPLOAD_DIR_COVER_LETTER = os.getenv("UPLOAD_DIR_COVER_LETTER", "uploads/cover_letters")
+ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx"}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
-UPLOAD_DIR_RESUME = os.getenv("UPLOAD_DIR_RESUME")
-UPLOAD_DIR_COVER_LETTER = os.getenv("UPLOAD_DIR_COVER_LETTER")
-ALLOWED_EXTENSIONS = os.getenv('ALLOWED_EXTENSIONS')
-MAX_FILE_SIZE = 10 * 1024 * 1024
-# create folder if it doesn't exist
-
-os.makedirs(UPLOAD_DIR_COVER_LETTER, exist_ok=True)
+# Create upload directories
 os.makedirs(UPLOAD_DIR_RESUME, exist_ok=True)
+os.makedirs(UPLOAD_DIR_COVER_LETTER, exist_ok=True)
 
+def sanitize_filename(filename: str) -> str:
+    return os.path.basename(filename)
 
-
-
-async def validate_upload(file: UploadFile):
-    # ✅ Check extension
- 
-
+async def validate_and_save_upload(file: UploadFile, directory: str) -> str:
+    # Validate file extension
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Only PDF, DOC, and DOCX files are allowed.")
-
-    # ✅ Check size
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF, DOC, and DOCX files are allowed"
+        )
+    
+    # Read file content
     contents = await file.read()
-    print('wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww')
-    print(type(MAX_FILE_SIZE))
+    
+    # Validate file size
     if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File too large. Max size is 5 MB.")
-
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Max size is {MAX_FILE_SIZE // (1024 * 1024)}MB"
+        )
     
-
-
-
-
-
-
-@router.post("/apply")
-async def apply(application : int,db = Depends(get_db),user= Depends(require_role("applicant")),resume: UploadFile=File(...), coverLetter: UploadFile=File(...)):
-    """
-    Apply for a job
-    ---
-    responses:
-      200:
-        description: Application successful
-      400:
-        description: Bad request
-    """
-    if db.query(Application).filter(
-        Application.applicantId == user.id ,
-        Application.jobId==application
-        ).all():
-        raise HTTPException(status_code=400, detail="You have already applied for this job")
+    # Generate unique filename
+    unique_filename = f"{uuid.uuid4()}{ext}"
+    file_path = os.path.join(directory, unique_filename)
     
-    await validate_upload(resume)
-    await validate_upload(coverLetter)
-
-    unique_filename_resume = f"{uuid.uuid4()}"
-    unique_filename_cover_letter = f"{uuid.uuid4()}"
-    resume_location = os.path.join(UPLOAD_DIR_RESUME, unique_filename_resume)
-    cover_letter_location = os.path.join(UPLOAD_DIR_COVER_LETTER, unique_filename_cover_letter)
-    
-    
-
-    with open(resume_location, "wb") as buffer:
-        contents = await resume.read()
-        buffer.write(contents)
-
-    with open(cover_letter_location, "wb") as buffer:
-        contents = await coverLetter.read()
+    # Save file
+    with open(file_path, "wb") as buffer:
         buffer.write(contents)
     
-     # to prevent duplicate application 
-   
-    application = Application(
-        applicantId=user.id,
-        jobId=application,
-        resumePath=resume_location,
-        coverLetterPath=cover_letter_location   
+    return file_path
+
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def apply_for_job(
+    application: int,
+    db: Session = Depends(get_db),
+    user = Depends(require_role("applicant")),
+    resume: UploadFile = File(...),
+    cover_letter: UploadFile = File(...)
+):
+    # Check job exists
+    job = db.query(Job).filter(Job.id == application).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+    
+    # Prevent duplicate applications
+    existing_application = db.query(Application).filter(
+        Application.applicant_id == user.id,
+        Application.job_id == application
+    ).first()
+    
+    if existing_application:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already applied for this job"
+        )
+    
+    # Process files
+    resume_path = await validate_and_save_upload(resume, UPLOAD_DIR_RESUME)
+    cover_path = await validate_and_save_upload(cover_letter, UPLOAD_DIR_COVER_LETTER)
+    
+    # Create application
+    new_application = Application(
+        applicant_id=user.id,
+        job_id=application,
+        resume_path=resume_path,
+        cover_letter_path=cover_path
     )
+    
     try:
-        db.add(application)
+        db.add(new_application)
         db.commit()
-        db.refresh(application)
+        db.refresh(new_application)
     except Exception as e:
-        return {"error": str(e), "message": "Failed to submit application"}
-    return {"message": "Application submitted successfully"}
-
+        # Clean up files if DB operation fails
+        for path in [resume_path, cover_path]:
+            if os.path.exists(path):
+                os.remove(path)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to submit application"
+        )
+    
+    return {
+        "message": "Application submitted successfully",
+        "application_id": new_application.id
+    }

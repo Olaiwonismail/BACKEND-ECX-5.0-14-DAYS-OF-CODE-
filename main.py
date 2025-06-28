@@ -1,37 +1,58 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.models import create_db_tables
-from app.config import settings  
+from app.config import settings
 from fastapi_pagination import add_pagination
+import os
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
-    description="A basic FastAPI project setup"
+    description="Job Application Platform API"
 )
 
-# Add CORS middleware to allow requests from any origin
+# CORS Configuration
+origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Create database tables if they don't exist
+# Create database tables
 create_db_tables()
-# Include the router from app.routers.index
-from app.routers.index import router as index
-from app.routers.auth import router as auth
-from app.routers.employer.jobs import router as jobs
-from app.routers.applicant.jobs import router as applicant_jobs
-from app.routers.applicant.apply import router as applicant_apply
 
-app.include_router(index, prefix="", tags=["index"])
-app.include_router(auth,prefix="/auth",tags=["auth"])
-app.include_router(jobs,prefix="/employer/jobs",tags=["manage jobs"])
-app.include_router(applicant_jobs,prefix="/jobs",tags = ["jobs"])
-app.include_router(applicant_apply,prefix="/applicant",tags=["apply"])
+# Global exception handler
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal server error"},
+    )
+
+# Include routers
+from app.routers.index import router as health_router
+from app.routers.auth import router as auth_router
+from app.routers.employer.jobs import router as employer_jobs_router
+from app.routers.applicant.jobs import router as job_search_router
+from app.routers.applicant.apply import router as application_router
+
+app.include_router(health_router, prefix="", tags=["System Health"])
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(employer_jobs_router, prefix="/employer/jobs", tags=["Employer - Job Management"])
+app.include_router(job_search_router, prefix="/jobs", tags=["Job Search"])
+app.include_router(application_router, prefix="/applicant", tags=["Applicant - Applications"])
+
 
 add_pagination(app)
