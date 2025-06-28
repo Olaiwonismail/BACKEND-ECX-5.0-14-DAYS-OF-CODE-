@@ -4,7 +4,7 @@ anyio
 bcrypt
 email_validator
 fastapi
-httpx1
+httpx
 passlib
 pydantic
 pydantic_core
@@ -27,3 +27,5 @@ python-dotenv==1.0.0
 fastapi-pagination==0.12.10
 psycopg2-binary==2.9.9
 httpx==0.25.0
+python-multipart
+pydantic[email]
