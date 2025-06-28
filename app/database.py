@@ -5,7 +5,7 @@ from app.config import settings
 
 # Create the database engine
 # The `pool_pre_ping=True` ensures connections are still alive
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+engine = create_engine('sqlite:///./test.db', pool_pre_ping=True)
 
 # Create a SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
