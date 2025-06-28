@@ -16,3 +16,14 @@ typing_extensions
 uvicorn
 fastapi-pagination
 pyparsing
+# requirements.txt
+fastapi==0.104.1
+uvicorn[standard]==0.23.2
+sqlalchemy==2.0.23
+pydantic==2.5.2
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-dotenv==1.0.0
+fastapi-pagination==0.12.10
+psycopg2-binary==2.9.9
+httpx==0.25.0
