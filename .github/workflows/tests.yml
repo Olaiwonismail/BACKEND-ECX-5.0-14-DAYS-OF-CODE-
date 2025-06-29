@@ -40,4 +40,5 @@ jobs:
         ALLOWED_EXTENSIONS: ".pdf,.doc,.docx"
         MAX_FILE_SIZE: "5242880"  # 5MB in bytes
       run: |
+        export PYTHONPATH=src
         pytest --cov=app -v
